@@ -77,7 +77,7 @@ func (w *Watcher) Watch() error {
 		case event := <-watcher.ResultChan():
 			switch obj := event.Object.(type) {
 			case *v1.Pod:
-				log.Printf("event: pod %s %s\n", event.Type, obj.GetName())
+				log.Printf("pod %s %s\n", event.Type, obj.GetName())
 				err = w.handlePod(obj, event.Type)
 				checkErr(err)
 			}
@@ -94,16 +94,13 @@ func checkErr(err error) {
 	}
 }
 
-func (w *Watcher) handlePod(pod *v1.Pod, eventType watch.EventType) error {
+func (w *Watcher) handlePod(pod *v1.Pod, eventType watch.EventType) (err error) {
 	switch eventType {
-	case watch.Deleted:
-		err := w.kubernetes.CreatePod(w.namespace, podName(w.namespace), w.image)
-		if err != nil {
-			return err
-		}
+	case watch.Modified:
+		err = w.ensureNumberOfPods()
 	}
 
-	return nil
+	return err
 }
 
 func (w *Watcher) ensureNumberOfPods() error {
