@@ -19,6 +19,7 @@ import (
 	"time"
 
 	"github.com/Henrod/kube-controller/controller"
+	"github.com/Henrod/kube-controller/http"
 	"github.com/Henrod/kube-controller/models"
 	"github.com/spf13/cobra"
 )
@@ -41,13 +42,19 @@ var startCmd = &cobra.Command{
 		kubernetes, err := models.NewKubernetes()
 		checkErr(err)
 
+		command := args
+		podSpec := controller.NewPodSpec(namespace, image, command)
+
 		log.Print("configuring watcher")
-		watcher := controller.NewWatcher(
-			kubernetes, namespace, image, numberOfPods, ticker)
+		watcher := controller.NewWatcher(kubernetes, podSpec, numberOfPods)
 		checkErr(err)
 
-		err = watcher.Create(servicePort)
+		names, err := watcher.Create(servicePort)
 		checkErr(err)
+
+		status := controller.NewStatus(names)
+		watcher.SetStatus(status)
+		go http.Start(status)
 
 		err = watcher.Watch()
 		checkErr(err)
@@ -64,11 +71,11 @@ func init() {
 	RootCmd.AddCommand(startCmd)
 	startCmd.Flags().StringVar(
 		&namespace, "namespace",
-		"default", "namespace to run watcher",
+		"statuspod", "namespace to run watcher",
 	)
 	startCmd.Flags().StringVar(
 		&image, "image",
-		"redis", "image of the pods",
+		"henrod/statuspod:latest", "image of the pods",
 	)
 	startCmd.Flags().IntVar(
 		&numberOfPods, "numberOfPods",
@@ -76,7 +83,7 @@ func init() {
 	)
 	startCmd.Flags().IntVar(
 		&servicePort, "port",
-		6379, "port to run service",
+		8080, "port to run service",
 	)
 	startCmd.Flags().DurationVar(
 		&ticker, "ticker",

@@ -7,11 +7,12 @@ import (
 
 // Kubernetes has methods to access kubernetes
 type Kubernetes interface {
-	CreatePod(namespace, name, image string) error
+	CreatePod(namespace, name, image string, command []string) error
 	CreateService(namespace, name string, port int) error
 	CreateNamespace(namespace string) error
 
 	GetPods(namespace string) ([]v1.Pod, error)
+	GetPod(namespace, name string) (*v1.Pod, error)
 
 	DeletePod(namespace, name string) error
 

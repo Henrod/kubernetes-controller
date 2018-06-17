@@ -28,7 +28,10 @@ func NewKubernetes() (*Kubernetes, error) {
 }
 
 // CreatePod creates pod
-func (k *Kubernetes) CreatePod(namespace, name, image string) error {
+func (k *Kubernetes) CreatePod(
+	namespace, name, image string,
+	command []string,
+) error {
 	pod := &v1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
@@ -40,7 +43,7 @@ func (k *Kubernetes) CreatePod(namespace, name, image string) error {
 		},
 		Spec: v1.PodSpec{
 			Containers: []v1.Container{
-				{Name: "main", Image: image},
+				{Name: "main", Image: image, Command: command},
 			},
 		},
 	}
@@ -113,6 +116,18 @@ func (k *Kubernetes) GetPods(namespace string) ([]v1.Pod, error) {
 	}
 
 	return pods.Items, nil
+}
+
+// GetPod returns the pod on namespace
+func (k *Kubernetes) GetPod(namespace, name string) (*v1.Pod, error) {
+	opts := metav1.GetOptions{}
+
+	pod, err := k.client.CoreV1().Pods(namespace).Get(name, opts)
+	if err != nil {
+		return nil, err
+	}
+
+	return pod, nil
 }
 
 // DeletePod deletes pod with name within namespace
